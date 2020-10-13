@@ -3,7 +3,7 @@ import random
 import math
 
 def cartes ():
-    cartes = []
+    cartes = [[]]
     for i in range (4):
         for j in range (1,14):
             cartes.append([i,j])
@@ -15,12 +15,32 @@ Cœur 	↦ 	2
 Carreau 	↦ 	1
 Trèfle 	↦ 	0'''
 
+class Carte:
+    """Représente une carte à jouer standard."""
+
+    def __init__(self, couleur = 0, valeur = 2):
+        self.couleur = couleur
+        self.valeur = valeur
+        
+    noms_couleurs = ['trèfle', 'carreau', 'cœur', 'pique']
+    noms_valeurs = [None, 'as', '2', '3', '4', '5', '6', '7', 
+              '8', '9', '10', 'valet', 'dame', 'roi']
+              
+    def __str__(self):
+        return '%s de %s' % (Carte.noms_valeurs[self.valeur],
+                             Carte.noms_couleurs[self.couleur])
+
 class Pile :
     """La pioche"""
     
     def __init__(self):
         self.contenu = []
-
+        
+    def __repr__(self):
+        ch="contenu de la pile : "
+        for x in self.contenu:
+            ch+=str(x)+ " "
+        return ch
 
     def est_vide (self):
         return self.contenu==[]
@@ -38,8 +58,9 @@ class Pile :
     def sommet (self):
         return self.contenu[-1]
 
-
-
+def pioche ():
+    
+    pioche = Pile()
 
 
 Espace_As_1 = Pile ()
@@ -55,11 +76,11 @@ Espace_colonne5 = Pile()
 Espace_colonne6 = Pile()
 Espace_colonne7 = Pile()
 
-def main():
 
-    p = Pile()
-    p.empiler(1)
-    
-print(main())
+
+
+Espace_As_1.empiler(Carte(0,1))
+print(Espace_As_1)
+
 
 
