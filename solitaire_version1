@@ -1,0 +1,65 @@
+import PIL
+import random
+import math
+
+def cartes ():
+    cartes = []
+    for i in range (4):
+        for j in range (1,14):
+            cartes.append([i,j])
+    return cartes
+print(cartes())
+
+'''Pique 	↦ 	3
+Cœur 	↦ 	2
+Carreau 	↦ 	1
+Trèfle 	↦ 	0'''
+
+class Pile :
+    """La pioche"""
+    
+    def __init__(self):
+        self.contenu = []
+
+
+    def est_vide (self):
+        return self.contenu==[]
+
+    def empiler (self,x):
+        self.contenu.append(x)
+
+    def depiler (self):
+        assert not (self.contenu is None), 'Liste vide'
+        self.contenu.pop()
+
+    def taille(self):
+        return len(self.contenu)
+
+    def sommet (self):
+        return self.contenu[-1]
+
+
+
+
+
+Espace_As_1 = Pile ()
+Espace_As_2 = Pile()
+Espace_As_3 = Pile()
+Espace_As_4 = Pile()
+
+Espace_Colonne1 = Pile()
+Espace_Colonne2 = Pile()
+Espace_colonne3 = Pile()
+Espace_colonne4 = Pile()
+Espace_colonne5 = Pile()
+Espace_colonne6 = Pile()
+Espace_colonne7 = Pile()
+
+def main():
+
+    p = Pile()
+    p.empiler(1)
+    
+print(main())
+
+
