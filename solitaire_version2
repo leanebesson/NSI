@@ -1,0 +1,128 @@
+import PIL
+from random import*
+import math
+
+def cartes ():
+    cartes = [[]]
+    for i in range (4):
+        for j in range (1,13):
+            cartes.append([i,j])
+    return cartes
+    
+print(cartes())
+
+'''Pique 	↦ 	3
+Cœur 	↦ 	2
+Carreau 	↦ 	1
+Trèfle 	↦ 	0'''
+
+class Carte:
+    """Représente une carte à jouer standard."""
+
+    def __init__(self, couleur = 0, valeur = 2):
+        self.couleur = couleur
+        self.valeur = valeur
+        
+    noms_couleurs = ['trèfle', 'carreau', 'cœur', 'pique']
+    noms_valeurs = [None,'as', '2', '3', '4', '5', '6', '7', 
+              '8', '9', '10', 'valet', 'dame', 'roi']
+              
+    def __str__(self):
+        return '%s de %s' % (Carte.noms_valeurs[self.valeur],
+                             Carte.noms_couleurs[self.couleur])
+
+class Pile :
+    """La pioche"""
+    
+    def __init__(self):
+        self.contenu = []
+        
+    def __repr__(self):
+        ch="contenu de la pile : "
+        for x in self.contenu:
+            ch+=str(x)+ ", "
+        return ch
+
+    def est_vide (self):
+        return self.contenu==[]
+
+    def empiler (self,x):
+        self.contenu.append(x)
+
+    def depiler (self):
+        assert not (self.contenu is None), 'Liste vide'
+        self.contenu.pop()
+
+    def taille(self):
+        return len(self.contenu)
+
+    def sommet (self):
+        return self.contenu[-1]
+
+def pioche ():
+    
+    pioche = Pile()
+    for i in range (26):
+        pioche.empiler(Carte(randint(0,3),randint(1,13)))
+    return pioche
+        
+
+def Colonne_1 ():
+    Colonne1 = Pile()
+    Colonne1.empiler(Carte(randint(0,3),randint(1,13)))
+    return Colonne1
+    
+def Colonne_2 ():
+    Colonne2 = Pile()
+    for i in range (2):
+        Colonne2.empiler(Carte(randint(0,3),randint(1,13)))
+    return Colonne2
+    
+def Colonne_3 ():
+    Colonne3 = Pile()
+    for i in range (3):
+        Colonne3.empiler(Carte(randint(0,3),randint(1,13)))
+    return Colonne3
+    
+def Colonne_4 ():
+    Colonne4 = Pile()
+    for i in range (4):
+        Colonne4.empiler(Carte(randint(0,3),randint(1,13)))
+    return Colonne4
+    
+def Colonne_5 ():
+    Colonne5 = Pile()
+    for i in range (5):
+        Colonne5.empiler(Carte(randint(0,3),randint(1,13)))
+    return Colonne5
+    
+def Colonne_6 ():
+    Colonne6 = Pile()
+    for i in range (6):
+        Colonne6.empiler(Carte(randint(0,3),randint(1,13)))
+    return Colonne6
+    
+def Colonne_7 ():
+    Colonne7 = Pile()
+    for i in range (7):
+        Colonne7.empiler(Carte(randint(0,3),randint(1,13)))
+    return Colonne7
+
+
+
+Espace_As_1 = Pile ()
+Espace_As_2 = Pile()
+Espace_As_3 = Pile()
+Espace_As_4 = Pile()
+
+
+print(pioche())
+print(Colonne_1())
+print(Colonne_2())
+print(Colonne_3())
+print(Colonne_4())
+print(Colonne_5())
+print(Colonne_6())
+print(Colonne_7())
+
+
