@@ -67,7 +67,7 @@ def pioche ():  #création de la pioche avec 26 cartes au hasard
     return pioche
         
 
-def Colonne_1 ():  #création des colonnes de cartes du début du jeu
+def Colonne_1 ():  #création des colonnes de cartes rétournées du début du jeu
     Colonne1 = Pile()
     Colonne1.empiler(Carte(randint(0,3),randint(1,13)))
     return Colonne1
