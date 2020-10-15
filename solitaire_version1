@@ -79,7 +79,7 @@ Espace_colonne7 = Pile()
 
 
 
-Espace_As_1.empiler(Carte(randint(0,3),randint(0,13)))
+Espace_As_1.empiler(Carte(randint(0,3),randint(1,13)))
 print(Espace_As_1)
 
 
