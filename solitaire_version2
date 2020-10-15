@@ -2,7 +2,7 @@ import PIL
 from random import*
 import math
 
-def cartes ():
+def cartes (): #création des cartes
     cartes = [[]]
     for i in range (4):
         for j in range (1,13):
@@ -24,14 +24,14 @@ class Carte:
         self.valeur = valeur
         
     noms_couleurs = ['trèfle', 'carreau', 'cœur', 'pique']
-    noms_valeurs = [None,'as', '2', '3', '4', '5', '6', '7', 
+    noms_valeurs = [None,'as', '2', '3', '4', '5', '6', '7', #none car l'as est le 1 et non le 0, pour que l'indice dans la liste soit le bon
               '8', '9', '10', 'valet', 'dame', 'roi']
               
     def __str__(self):
         return '%s de %s' % (Carte.noms_valeurs[self.valeur],
                              Carte.noms_couleurs[self.couleur])
 
-class Pile :
+class Pile : 
     """La pioche"""
     
     def __init__(self):
@@ -59,7 +59,7 @@ class Pile :
     def sommet (self):
         return self.contenu[-1]
 
-def pioche ():
+def pioche ():  #création de la pioche avec 26 cartes au hasard
     
     pioche = Pile()
     for i in range (26):
@@ -67,7 +67,7 @@ def pioche ():
     return pioche
         
 
-def Colonne_1 ():
+def Colonne_1 ():  #création des colonnes de cartes du début du jeu
     Colonne1 = Pile()
     Colonne1.empiler(Carte(randint(0,3),randint(1,13)))
     return Colonne1
@@ -110,7 +110,7 @@ def Colonne_7 ():
 
 
 
-Espace_As_1 = Pile ()
+Espace_As_1 = Pile ()  #espaces vides pour y mettre les as
 Espace_As_2 = Pile()
 Espace_As_3 = Pile()
 Espace_As_4 = Pile()
