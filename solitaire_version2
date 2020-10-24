@@ -10,10 +10,32 @@ HEIGHT=600
 
 interface = Tk()
 interface.title('Solitaire')
+
 cnv = Canvas(interface, width = WIDTH, height= HEIGHT, background = 'green')
+cnv.pack(pady = 20)
+
 img = PhotoImage(file = "playing_cards/ace_clubs.png")
 cnv.create_image(WIDTH/2, HEIGHT/2, image = img)
-cnv.pack()
+
+# creation du mouvement
+
+    
+
+
+def move(e):
+    #e,x
+    #e,y
+    global img
+    img = PhotoImage(file = "playing_cards/ace_clubs.png")
+    cnv.create_image(e.x, e.y, image = img)
+    my_label.config(text = "Coordonnées x:" + str(e.x) + "y :" + str(e.y))
+    
+my_label = Label(interface, text="")
+my_label.pack(pady = 20)
+
+
+cnv.bind  ('<B1-Motion>', move)
+
 
 #### 
 
