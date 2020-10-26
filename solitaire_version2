@@ -1,3 +1,4 @@
+
 import PIL
 from random import*
 import math
@@ -5,71 +6,98 @@ from tkinter import*
 
 #### interface graphique 
 
-WIDTH=800
-HEIGHT=600
+WIDTH=800               #taille de la fenêtre
+HEIGHT=400
 
 interface = Tk()
 interface.title('Solitaire')
 
 cnv = Canvas(interface, width = WIDTH, height= HEIGHT, background = 'green')
-cnv.pack(pady = 20)
+cnv.pack(pady = 0)
+cnv.selCarte = None 
 
-img = PhotoImage(file = "playing_cards/ace_clubs.png")
-cnv.create_image(WIDTH/2, HEIGHT/2, image = img)
+#chargement des images des cartes dans un dictionnaire images
+hauteurs = ['ace', '2', '3', '4', '5', '6', '7', '8','9', '10', 'jack', 'queen', 'king']
+enseignes = ['clubs', 'spades', 'hearts', 'diamonds']
+
+images ={} #creation du dictionnaire vide
+
+for enseigne in enseignes :         
+    for i in range (len(hauteurs)):
+        #on remplie le dictionnaire avec le couple enseigne, hauteur comme clef et l'image comme valeur
+        images[(enseigne,i+1)] = PhotoImage(file = "playing_cards/"+hauteurs[i]+"_"+enseigne+".png")    
+print(images)
+       
+       
+pioche = cnv.create_rectangle(25,25,96,121)  #creation de l'emplacement pour la pioche
+
+#creation des emplacements pour les quatre tas 
+tas_1 = cnv.create_rectangle(400,25,471,121)
+tas_2 = cnv.create_rectangle(500,25,571,121)
+tas_3 = cnv.create_rectangle(600,25,671,121)
+tas_4 = cnv.create_rectangle(700,25,771,121)
+
+#creation des emplacements pour les "suites"
+colonne_1 = cnv.create_rectangle(100,165,171,261)
+colonne_2 = cnv.create_rectangle(200,165,271,261)
+colonne_3 = cnv.create_rectangle(300,165,371,261)
+colonne_4 = cnv.create_rectangle(400,165,471,261)
+colonne_5 = cnv.create_rectangle(500,165,571,261)
+colonne_6 = cnv.create_rectangle(600,165,671,261)
+colonne_7 = cnv.create_rectangle(700,165,771,261)
+
+####
 
 # creation du mouvement
 
+def appui_gauche (e):
+    '''Traitement de l'évènement appui sur le bouton gauche de la souris'''
+    
+    cnv.x1, cnv.y1 = e.x, e.y
+    cnv.selCarte = cnv.find_closest(e.x, e.y)
+    #cnv.itemconfig(cnv.selCarte, width = 3)
+    cnv.lift(cnv.selCarte)
+
+
+def deplacer(e):
+    '''Traitement du appuyer-glisser de la souris'''
+    x2, y2 = e.x, e.y
+    dx, dy = x2 - cnv.x1, y2 - cnv.y1
+    if cnv.selCarte is not None :
+        cnv.move(cnv.selCarte, dx, dy)
+        cnv.x1, cnv.y1 = x2, y2
+        
+    
     
 
 
-def move(e):
-    #e,x
-    #e,y
-    global img
-    img = PhotoImage(file = "playing_cards/ace_clubs.png")
-    cnv.create_image(e.x, e.y, image = img)
-    my_label.config(text = "Coordonnées x:" + str(e.x) + "y :" + str(e.y))
+def relache_gauche (e):
+    print("Le bouton de la souris a été relaché")
     
-my_label = Label(interface, text="")
-my_label.pack(pady = 20)
+cnv.bind ('<B1-Motion>', deplacer)      #mouvement de la souris tenue
+cnv.bind("<Button1-ButtonRelease>", relache_gauche)    #relacher la souris
+cnv.bind("<Button-1>", appui_gauche)    #appui sur le bouton gauche de la souris
 
 
-cnv.bind  ('<B1-Motion>', move)
 
-
-#### 
-
-
-def cartes ():
-    cartes = [[]]
-    for i in range (4):
-        for j in range (1,13):
-            cartes.append([i,j])
-    return cartes
-
-print(cartes())
-
-'''Pique 	↦ 	3
-Cœur 	↦ 	2
-Carreau 	↦ 	1
-Trèfle 	↦ 	0'''
-
-##### class objets
+#### class objets
 
 class Carte:
-    """Représente une carte à jouer standard."""
+    """Représente une carte à jouer standard.
+    L'attribut valeur est un couple (enseigne, hauteur) où enseigne 
+    est une chaîne et hauteur un entier entre 1 (as) et 13 (roi).
+    Les attributs x,y donnent la poition du coin supérieur gauche.
+    L'attribut visible est un booléen qui indique si la carte est 
+    visible ou retournée."""
 
-    def __init__(self, couleur = 0, valeur = 2):
-        self.couleur = couleur
+    def __init__(self, x, y, valeur, visible = False):
+        
+        self.x = x
+        self.y = y
         self.valeur = valeur
-
-    noms_couleurs = ['trèfle', 'carreau', 'cœur', 'pique']
-    noms_valeurs = [None,'as', '2', '3', '4', '5', '6', '7',
-              '8', '9', '10', 'valet', 'dame', 'roi']
-
-    def __str__(self):
-        return '%s de %s' % (Carte.noms_valeurs[self.valeur],
-                             Carte.noms_couleurs[self.couleur])
+        self.visible = visible
+        self.id = cnv.create_image(x, y, image = images[valeur])
+        
 
 class Pile :
     """La pioche"""
@@ -150,76 +178,29 @@ def Colonne_7 ():
         Colonne7.empiler(Carte(randint(0,3),randint(1,13)))
     return Colonne7
 
-def main():
-    img = pygame.image.load("playing_cards/ace_clubs.png")
-    img = pygame.image.load("playing_cards/2_clubs.png")
-    img = pygame.image.load("playing_cards/3_clubs.png")
-    img = pygame.image.load("playing_cards/4_clubs.png")
-    img = pygame.image.load("playing_cards/5_clubs.png")
-    img = pygame.image.load("playing_cards/6_clubs.png")
-    img = pygame.image.load("playing_cards/7_clubs.png")
-    img = pygame.image.load("playing_cards/8_clubs.png")
-    img = pygame.image.load("playing_cards/9_clubs.png")
-    img = pygame.image.load("playing_cards/10_clubs.png")
-    img = pygame.image.load("playing_cards/jack_clubs.png")
-    img = pygame.image.load("playing_cards/queen_clubs.png")
-    img = pygame.image.load("playing_cards/king_clubs.png")
-    img = pygame.image.load("playing_cards/ace_spades.png")
-    img = pygame.image.load("playing_cards/2_spades.png")
-    img = pygame.image.load("playing_cards/3_spades.png")
-    img = pygame.image.load("playing_cards/4_spades.png")
-    img = pygame.image.load("playing_cards/5_spades.png")
-    img = pygame.image.load("playing_cards/6_spades.png")
-    img = pygame.image.load("playing_cards/7_spades.png")
-    img = pygame.image.load("playing_cards/8_spades.png")
-    img = pygame.image.load("playing_cards/9_spades.png")
-    img = pygame.image.load("playing_cards/10_spades.png")
-    img = pygame.image.load("playing_cards/jack_spades.png")
-    img = pygame.image.load("playing_cards/queen_spades.png")
-    img = pygame.image.load("playing_cards/king_spades.png")
-    img = pygame.image.load("playing_cards/ace_hearts.png")
-    img = pygame.image.load("playing_cards/2_hearts.png")
-    img = pygame.image.load("playing_cards/3_hearts.png")
-    img = pygame.image.load("playing_cards/4_hearts.png")
-    img = pygame.image.load("playing_cards/5_hearts.png")
-    img = pygame.image.load("playing_cards/6_hearts.png")
-    img = pygame.image.load("playing_cards/7_hearts.png")
-    img = pygame.image.load("playing_cards/8_hearts.png")
-    img = pygame.image.load("playing_cards/9_hearts.png")
-    img = pygame.image.load("playing_cards/10_hearts.png")
-    img = pygame.image.load("playing_cards/jack_hearts.png")
-    img = pygame.image.load("playing_cards/queen_hearts.png")
-    img = pygame.image.load("playing_cards/king_hearts.png")
-    img = pygame.image.load("playing_cards/ace_diamonds.png")
-    img = pygame.image.load("playing_cards/2_diamonds.png")
-    img = pygame.image.load("playing_cards/3_diamonds.png")
-    img = pygame.image.load("playing_cards/4_diamonds.png")
-    img = pygame.image.load("playing_cards/5_diamonds.png")
-    img = pygame.image.load("playing_cards/6_diamonds.png")
-    img = pygame.image.load("playing_cards/7_diamonds.png")
-    img = pygame.image.load("playing_cards/8_diamonds.png")
-    img = pygame.image.load("playing_cards/9_diamonds.png")
-    img = pygame.image.load("playing_cards/10_diamonds.png")
-    img = pygame.image.load("playing_cards/jack_diamonds.png")
-    img = pygame.image.load("playing_cards/queen_diamonds.png")
-    img = pygame.image.load("playing_cards/king_diamonds.png")
-    img = pygame.image.load("playing_cards/back_card.png")
+
+
+
 
 #### appels
 
-Espace_As_1 = Pile ()
+my_label = Label(interface, text="")
+my_label.pack(pady = 0)
+
+
+c = Carte(60, 74, ('spades', 5))
+c = Carte(60, 74, ('diamonds', 13))
+c = Carte(60, 74, ('clubs', 2))
+
+'''Espace_As_1 = Pile ()
 Espace_As_2 = Pile()
 Espace_As_3 = Pile()
-Espace_As_4 = Pile()
-
-
-print(pioche())
-print(Colonne_1())
-print(Colonne_2())
-print(Colonne_3())
-print(Colonne_4())
-print(Colonne_5())
-print(Colonne_6())
-print(Colonne_7())
+Espace_As_4 = Pile()'''
 
 interface.mainloop()
+
+'''Sources utilisées pour aide : 
+   - Apprendre à programmer avec Python 3, de Gérard Swimmen
+   - Tkinter pour ISN, documentation TKinter en ligne,
+   '''
+
