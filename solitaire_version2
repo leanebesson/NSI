@@ -4,7 +4,76 @@ from random import*
 import math
 from tkinter import*
 
-#### interface graphique 
+#### Fonctions
+
+# creation du mouvement
+
+def appui_gauche (e):
+    '''Traitement de l'évènement appui sur le bouton gauche de la souris'''
+    
+    cnv.x1, cnv.y1 = e.x, e.y
+    cnv.selCarte = cnv.find_closest(e.x, e.y)
+    print(cnv.selCarte)
+    #cnv.itemconfig(cnv.selCarte, width = 3)
+    cnv.lift(cnv.selCarte)
+
+
+def deplacer(e):
+    '''Traitement du appuyer-glisser de la souris'''
+    
+    x2, y2 = e.x, e.y
+    dx, dy = x2 - cnv.x1, y2 - cnv.y1
+    if cnv.selCarte is not None :
+        cnv.move(cnv.selCarte, dx, dy)
+        cnv.x1, cnv.y1 = x2, y2
+        
+    
+def relache_gauche (e):
+    '''Traitement du lâcher de la souris'''
+
+    cnv.selCarte = None
+    
+def distribution ():
+    '''Modifie les listes l_pioches, l_colonnes pour distribuer les cartes.'''
+    
+    for k in range (7):
+        (x, y) = position_colonne[k]
+        for i in range (k):
+            valeur_carte = l_pioche.pop()
+            l_colonnes[k].append(valeur_carte) #distribue une carte côté non visible dans la colonne
+            c = Carte(x, y, valeur_carte)
+            y +=20   
+        (hauteur, enseigne, visible) = l_pioche.pop()
+        l_colonnes[k].append((hauteur, enseigne, True))
+        c = Carte( x, y, (hauteur, enseigne, True) )
+        
+    
+
+
+#### Création de variables globales
+
+hauteurs = ['ace', '2', '3', '4', '5', '6', '7', '8','9', '10', 'jack', 'queen', 'king']
+enseignes = ['clubs', 'spades', 'hearts', 'diamonds']
+
+l_pioche = []       #creation d'une liste vide pioche contenant toutes les cartes du jeu 
+
+for enseigne in enseignes :         
+    for i in range (len(hauteurs)):
+        l_pioche.append((i+1,enseigne, False))     #on remplie la liste l_pioche avec des triplets (hauteur, enseigne, booléen de la carte est visible ou non)
+        
+shuffle(l_pioche)
+print(l_pioche)
+
+
+l_tas = [[]for k in range (4)]      #creation d'une liste de liste représentant les espaces "tas" où l'on va ranger les cartes
+l_colonnes = [[]for m in range (7)]     #creation d'une liste de liste représentant les espaces "colonnes" où l'on manipule les cartes
+
+hauteur_carte = 96
+largeur_carte = 71
+position_colonne = [(k*100+36,213) for k in range (1,8)]
+
+
+#### Interface graphique 
 
 WIDTH=800               #taille de la fenêtre
 HEIGHT=400
@@ -17,16 +86,21 @@ cnv.pack(pady = 0)
 cnv.selCarte = None 
 
 #chargement des images des cartes dans un dictionnaire images
-hauteurs = ['ace', '2', '3', '4', '5', '6', '7', '8','9', '10', 'jack', 'queen', 'king']
-enseignes = ['clubs', 'spades', 'hearts', 'diamonds']
 
 images ={} #creation du dictionnaire vide
 
 for enseigne in enseignes :         
     for i in range (len(hauteurs)):
         #on remplie le dictionnaire avec le couple enseigne, hauteur comme clef et l'image comme valeur
-        images[(enseigne,i+1)] = PhotoImage(file = "playing_cards/"+hauteurs[i]+"_"+enseigne+".png")    
-print(images)
+        images[(i+1, enseigne)] = PhotoImage(file = "playing_cards/"+hauteurs[i]+"_"+enseigne+".png") 
+        
+image_dos = PhotoImage(file = "playing_cards/back_card.png")    #on importe l'image de dos à part
+
+
+
+cnv.bind ('<B1-Motion>', deplacer)      #mouvement de la souris tenue
+cnv.bind("<Button1-ButtonRelease>", relache_gauche)    #relacher la souris
+cnv.bind("<Button-1>", appui_gauche)    #appui sur le bouton gauche de la souris
        
        
 pioche = cnv.create_rectangle(25,25,96,121)  #creation de l'emplacement pour la pioche
@@ -46,41 +120,11 @@ colonne_5 = cnv.create_rectangle(500,165,571,261)
 colonne_6 = cnv.create_rectangle(600,165,671,261)
 colonne_7 = cnv.create_rectangle(700,165,771,261)
 
-####
-
-# creation du mouvement
-
-def appui_gauche (e):
-    '''Traitement de l'évènement appui sur le bouton gauche de la souris'''
-    
-    cnv.x1, cnv.y1 = e.x, e.y
-    cnv.selCarte = cnv.find_closest(e.x, e.y)
-    #cnv.itemconfig(cnv.selCarte, width = 3)
-    cnv.lift(cnv.selCarte)
-
-
-def deplacer(e):
-    '''Traitement du appuyer-glisser de la souris'''
-    x2, y2 = e.x, e.y
-    dx, dy = x2 - cnv.x1, y2 - cnv.y1
-    if cnv.selCarte is not None :
-        cnv.move(cnv.selCarte, dx, dy)
-        cnv.x1, cnv.y1 = x2, y2
-        
-    
-    
-
-
-def relache_gauche (e):
-    print("Le bouton de la souris a été relaché")
-    
-cnv.bind ('<B1-Motion>', deplacer)      #mouvement de la souris tenue
-cnv.bind("<Button1-ButtonRelease>", relache_gauche)    #relacher la souris
-cnv.bind("<Button-1>", appui_gauche)    #appui sur le bouton gauche de la souris
 
 
 
-#### class objets
+
+#### Classes objets
 
 class Carte:
     """Représente une carte à jouer standard.
@@ -90,13 +134,15 @@ class Carte:
     L'attribut visible est un booléen qui indique si la carte est 
     visible ou retournée."""
 
-    def __init__(self, x, y, valeur, visible = False):
-        
+    def __init__(self, x, y, valeur):
         self.x = x
         self.y = y
         self.valeur = valeur
-        self.visible = visible
-        self.id = cnv.create_image(x, y, image = images[valeur])
+        (hauteur, enseigne, visible) = valeur
+        if visible :
+            self.id = cnv.create_image(x, y, image = images[hauteur, enseigne])
+        else :
+            self.id = cnv.create_image(x, y, image = image_dos)
         
 
 class Pile :
@@ -127,75 +173,21 @@ class Pile :
     def sommet (self):
         return self.contenu[-1]
 
-#### fonctions
-
-def pioche ():
-
-    pioche = Pile()
-    for i in range (26):
-        pioche.empiler(Carte(randint(0,3),randint(1,13)))
-    return pioche
-
-
-def Colonne_1 ():
-    Colonne1 = Pile()
-    Colonne1.empiler(Carte(randint(0,3),randint(1,13)))
-    return Colonne1
-
-def Colonne_2 ():
-    Colonne2 = Pile()
-    for i in range (2):
-        Colonne2.empiler(Carte(randint(0,3),randint(1,13)))
-    return Colonne2
-
-def Colonne_3 ():
-    Colonne3 = Pile()
-    for i in range (3):
-        Colonne3.empiler(Carte(randint(0,3),randint(1,13)))
-    return Colonne3
-
-def Colonne_4 ():
-    Colonne4 = Pile()
-    for i in range (4):
-        Colonne4.empiler(Carte(randint(0,3),randint(1,13)))
-    return Colonne4
-
-def Colonne_5 ():
-    Colonne5 = Pile()
-    for i in range (5):
-        Colonne5.empiler(Carte(randint(0,3),randint(1,13)))
-    return Colonne5
-
-def Colonne_6 ():
-    Colonne6 = Pile()
-    for i in range (6):
-        Colonne6.empiler(Carte(randint(0,3),randint(1,13)))
-    return Colonne6
-
-def Colonne_7 ():
-    Colonne7 = Pile()
-    for i in range (7):
-        Colonne7.empiler(Carte(randint(0,3),randint(1,13)))
-    return Colonne7
 
 
 
 
 
-#### appels
+#### Appels
 
 my_label = Label(interface, text="")
 my_label.pack(pady = 0)
 
+distribution()
 
-c = Carte(60, 74, ('spades', 5))
-c = Carte(60, 74, ('diamonds', 13))
-c = Carte(60, 74, ('clubs', 2))
 
-'''Espace_As_1 = Pile ()
-Espace_As_2 = Pile()
-Espace_As_3 = Pile()
-Espace_As_4 = Pile()'''
+
+
 
 interface.mainloop()
 
@@ -203,4 +195,3 @@ interface.mainloop()
    - Apprendre à programmer avec Python 3, de Gérard Swimmen
    - Tkinter pour ISN, documentation TKinter en ligne,
    '''
-
