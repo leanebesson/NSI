@@ -13,10 +13,15 @@ def appui_gauche (e):
     '''Traitement de l'évènement appui sur le bouton gauche de la souris'''
     
     cnv.x1, cnv.y1 = e.x, e.y
-    cnv.selCarte = cnv.find_closest(e.x, e.y)
+    id_appui = cnv.find_closest(e.x, e.y)[0]    #[0] permet de trouver l'element dans le tuple
+    if id_appui in carte_id :
+        cnv.selCarte = carte_id[id_appui]
+        cnv.lift(cnv.selCarte)
+        print(cnv.selCarte.appartenance)
+    else:
+        cnv.selCarte = None
     print(cnv.selCarte)
-    #cnv.itemconfig(cnv.selCarte, width = 3)
-    cnv.lift(cnv.selCarte)
+
     
 
 def deplacer(e):
@@ -48,6 +53,7 @@ def creation_pioche ():
     pioche = Pile_cartes(61, 72, 0, 0)
     for valeur in l_pioche :
         c = Carte(61, 72, valeur)
+        c.appartenance = 'pioche'
         pioche.empiler(c)
         
     return pioche
@@ -62,10 +68,13 @@ def distribution (pioche):
         for i in range (k):
             carte = pioche.depiler()    #prend une carte dans la pioche
             col.empiler(carte) #ajoute la carte dans la colonne
+            carte.appartenance = 'colonne'+str(k)
         carte = pioche.depiler()
         carte.retourner()
+        carte.appartenance = 'colonne'+str(k)
         col.empiler(carte)
         colonnes.append(col)
+        
         
     return colonnes
     
@@ -150,6 +159,8 @@ class Carte:
         self.x = x
         self.y = y
         self.valeur = valeur
+        self.appartenance = None    # à sa création, la carte n'a pas d'appartenance definie
+        #les appartenances possibles sont 'pioche', 'la_main', les 'tas' (0 à 3) et les 'colonnes' (0 à 6)
         (hauteur, enseigne, visible) = valeur
         if visible :
             self.id = cnv.create_image(x, y, image = images[hauteur, enseigne])
