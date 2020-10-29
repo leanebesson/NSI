@@ -3,6 +3,7 @@ import PIL
 from random import*
 import math
 from tkinter import*
+from time import *
 
 #### Fonctions
 
@@ -16,7 +17,7 @@ def appui_gauche (e):
     print(cnv.selCarte)
     #cnv.itemconfig(cnv.selCarte, width = 3)
     cnv.lift(cnv.selCarte)
-
+    
 
 def deplacer(e):
     '''Traitement du appuyer-glisser de la souris'''
@@ -32,21 +33,41 @@ def relache_gauche (e):
     '''Traitement du lâcher de la souris'''
 
     cnv.selCarte = None
+   
+def creation_pioche ():
+    '''Renvoie une liste d'elements de Pile_cartes qui représente la pioche mélangée'''
     
-def distribution ():
-    '''Modifie les listes l_pioches, l_colonnes pour distribuer les cartes.'''
+    l_pioche = []
     
-    for k in range (7):
-        (x, y) = position_colonne[k]
-        for i in range (k):
-            valeur_carte = l_pioche.pop()
-            l_colonnes[k].append(valeur_carte) #distribue une carte côté non visible dans la colonne
-            c = Carte(x, y, valeur_carte)
-            y +=20   
-        (hauteur, enseigne, visible) = l_pioche.pop()
-        l_colonnes[k].append((hauteur, enseigne, True))
-        c = Carte( x, y, (hauteur, enseigne, True) )
+    for enseigne in enseignes :         
+        for i in range (len(hauteurs)):
+            l_pioche.append((i+1,enseigne, False))     #on remplie la liste l_pioche avec des triplets (hauteur, enseigne, booléen de la carte est visible ou non)
+            
+    shuffle(l_pioche)
+    
+    pioche = Pile_cartes(61, 72, 0, 0)
+    for valeur in l_pioche :
+        c = Carte(61, 72, valeur)
+        pioche.empiler(c)
         
+    return pioche
+    
+def distribution (pioche):
+    '''Renvoie la liste de piles représentant les colonnes de manipulation des cartes.'''
+    
+    colonnes = []
+    for k in range (7):
+        (x, y) = (100*k+136, 213)
+        col = Pile_cartes( x, y, 0, 20)
+        for i in range (k):
+            carte = pioche.depiler()    #prend une carte dans la pioche
+            col.empiler(carte) #ajoute la carte dans la colonne
+        carte = pioche.depiler()
+        carte.retourner()
+        col.empiler(carte)
+        colonnes.append(col)
+        
+    return colonnes
     
 
 
@@ -55,22 +76,15 @@ def distribution ():
 hauteurs = ['ace', '2', '3', '4', '5', '6', '7', '8','9', '10', 'jack', 'queen', 'king']
 enseignes = ['clubs', 'spades', 'hearts', 'diamonds']
 
-l_pioche = []       #creation d'une liste vide pioche contenant toutes les cartes du jeu 
-
-for enseigne in enseignes :         
-    for i in range (len(hauteurs)):
-        l_pioche.append((i+1,enseigne, False))     #on remplie la liste l_pioche avec des triplets (hauteur, enseigne, booléen de la carte est visible ou non)
-        
-shuffle(l_pioche)
-print(l_pioche)
-
-
 l_tas = [[]for k in range (4)]      #creation d'une liste de liste représentant les espaces "tas" où l'on va ranger les cartes
 l_colonnes = [[]for m in range (7)]     #creation d'une liste de liste représentant les espaces "colonnes" où l'on manipule les cartes
 
 hauteur_carte = 96
 largeur_carte = 71
-position_colonne = [(k*100+36,213) for k in range (1,8)]
+
+#dictionnaire qui donne la carte en fonction de l'identifiant du canevas
+
+carte_id = {}
 
 
 #### Interface graphique 
@@ -95,8 +109,6 @@ for enseigne in enseignes :
         images[(i+1, enseigne)] = PhotoImage(file = "playing_cards/"+hauteurs[i]+"_"+enseigne+".png") 
         
 image_dos = PhotoImage(file = "playing_cards/back_card.png")    #on importe l'image de dos à part
-
-
 
 cnv.bind ('<B1-Motion>', deplacer)      #mouvement de la souris tenue
 cnv.bind("<Button1-ButtonRelease>", relache_gauche)    #relacher la souris
@@ -143,13 +155,30 @@ class Carte:
             self.id = cnv.create_image(x, y, image = images[hauteur, enseigne])
         else :
             self.id = cnv.create_image(x, y, image = image_dos)
+        carte_id[self.id] = self  #ajout d'une entrée dans le dictionnaire  carte_id
+        
+    def retourner (self):
+        (hauteur, enseigne, visible) = self.valeur
+        self.valeur = (hauteur, enseigne, not visible)
+        if visible :
+            cnv.itemconfig(self.id, image = image_dos)
+        else:
+            cnv.itemconfig(self.id, image = images[hauteur, enseigne])
+            
+    def deplacer (self, dx, dy):
+        self.x += dx
+        self.y += dy
+        cnv.move(self.id, dx, dy)
+        
         
 
-class Pile :
-    """La pioche"""
+class Pile_cartes :
+    """Classe pour des piles de cartes; la pioche, les colonnes de manipulation des cartes, ..."""
 
-    def __init__(self):
+    def __init__(self,x, y, decale_x, decale_y):  #decale_x, decale_y pour le décalage à l'affichage entre deux cartes
         self.contenu = []
+        self.x, self.y = x, y
+        self.decale_x, self.decale_y = decale_x, decale_y
 
     def __repr__(self):
         ch="contenu de la pile : "
@@ -160,18 +189,31 @@ class Pile :
     def est_vide (self):
         return self.contenu==[]
 
-    def empiler (self,x):
-        self.contenu.append(x)
+    def empiler (self, c):
+        n = self.taille()         #nombre de cartes avant l'ajout
+        self.contenu.append(c)
+        x1, y1 = c.x, c.y       # coordonnées de la carte
+        cnv.move(c.id, self.x -x1 + n*self.decale_x, self.y - y1 + n*self.decale_y) #place la carte sur la pile 
+        cnv.lift(c.id)      #place la carte au dessus des autres
+        print(c.valeur)
 
     def depiler (self):
         assert not (self.contenu is None), 'Liste vide'
-        self.contenu.pop()
+        return self.contenu.pop()
 
     def taille(self):
+        assert not (self.contenu is None), 'Liste vide'
         return len(self.contenu)
 
     def sommet (self):
         return self.contenu[-1]
+        
+    def deplacer (self, dx, dy):
+        self.x += dx
+        self.y += dy
+        for carte in self.contenu :
+            carte.deplacer(dx, dy)
+        
 
 
 
@@ -179,14 +221,8 @@ class Pile :
 
 
 #### Appels
-
-my_label = Label(interface, text="")
-my_label.pack(pady = 0)
-
-distribution()
-
-
-
+pioche = creation_pioche()
+colonnes = distribution(pioche)
 
 
 interface.mainloop()
