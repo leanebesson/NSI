@@ -5,6 +5,7 @@ import math
 from tkinter import*
 from time import *
 
+
 #### Fonctions
 
 # creation du mouvement
@@ -12,33 +13,194 @@ from time import *
 def appui_gauche (e):
     '''Traitement de l'évènement appui sur le bouton gauche de la souris'''
     
-    cnv.x1, cnv.y1 = e.x, e.y
+    cnv.x1, cnv.y1 = e.x, e.y   # la position du clic est conservé grâce à cnv.x1 et cnv.y1
     id_appui = cnv.find_closest(e.x, e.y)[0]    #[0] permet de trouver l'element dans le tuple
-    if id_appui in carte_id :
-        cnv.selCarte = carte_id[id_appui]
-        cnv.lift(cnv.selCarte)
-        print(cnv.selCarte.appartenance)
-    else:
-        cnv.selCarte = None
-    print(cnv.selCarte)
+    if id_appui in carte_id :       # teste si l'identifiant du widget cliqué est bien celui d'une carte 
+        carte = carte_id[id_appui]
+        (hauteur, enseigne, visible) = carte.valeur
+        if not visible :
+            groupe = groupe_id(e.x, e.y)
+            if groupe == 'pioche':
+                cnv.pile_mobile= None
+                cnv.origine_pile_mobile = None
+                appartenance = carte.appartenance
+                if not main.est_vide():   #si la main n'est pas vide, on remet les cartes de la main sous la pioche puis on la remplie
+                    
+                    for i in range (main.taille()-1, -1, -1):
+                        carte_pioche = main.depiler()
+                        carte_pioche.retourner()
+                        carte_pioche.deplacer(-100-20*i, 0)
+                        pioche.contenu.insert(0, carte_pioche)
+                        carte_pioche.appartenance = 'pioche'
+                        
+                        
+                elif main.est_vide():         # si la main est vide, on peut la remplir de trois cartes
+                    for i in range (3):
+                        carte_pioche = pioche.depiler()    #prend une carte dans la pioche
+                        carte_pioche.retourner()
+                        main.empiler(carte_pioche) #ajoute la carte dans la main
+                        carte_pioche.appartenance = 'main'+str(i)
 
-    
+
+            cnv.pile_mobile = None
+            return
+        appartenance = carte.appartenance
+        if appartenance[:-1] == 'main':
+            k = int(appartenance[-1])      #numero de la carte
+            cnv.pile_mobile = Pile_cartes(carte.x, carte.y, 0, 0)
+            cnv.pile_mobile.empiler(main.contenu.pop())
+            cnv.origine_pile_mobile = 'main'+str(k)
+            
+        if appartenance[:-1] == 'colonne':  #teste si la carte est dans une colonne
+            k = int(appartenance[-1])      #numero de la colonne
+            pile = colonnes[k]
+            position = pile.contenu.index(carte) # indice de la carte dans la colonne
+            cnv.pile_mobile = Pile_cartes(carte.x, carte.y, 0, 20)
+            cnv.origine_pile_mobile = 'colonne'+str(k)
+            while len(pile.contenu) > position :
+                cnv.pile_mobile.empiler(pile.contenu.pop(position))
+            
+    else:
+        cnv.pile_mobile= None
+        cnv.origine_pile_mobile = None
 
 def deplacer(e):
     '''Traitement du appuyer-glisser de la souris'''
     
-    x2, y2 = e.x, e.y
+    x2, y2 = e.x, e.y   # position de la souris
     dx, dy = x2 - cnv.x1, y2 - cnv.y1
-    if cnv.selCarte is not None :
-        cnv.move(cnv.selCarte, dx, dy)
+    if cnv.pile_mobile is not None :
+        cnv.pile_mobile.deplacer(dx, dy)
         cnv.x1, cnv.y1 = x2, y2
         
     
 def relache_gauche (e):
     '''Traitement du lâcher de la souris'''
+    
+    groupe = groupe_id(e.x, e.y)
+    
+    if groupe == 'pioche':  #si on clique sur la pioche, il n'y a pas de pile mobile
+        return 
+        
+    orig = cnv.origine_pile_mobile[:-1]  #le groupe dont la pile mobile est prélevé
+    num_orig = int(cnv.origine_pile_mobile[-1]) # le numéro dans le groupe où la pile mobile est prélévé
+    
+    if cnv.pile_mobile is None:
+        return 
+        
+    if groupe is None:
+        if orig == 'colonne':
+            colonnes[num_orig].etendre(cnv.pile_mobile)     # remets le contenu de la pile mobile dans sa pile d'origine si on ne la pose nulle part
+        elif orig == 'main':
+            main.etendre(cnv.pile_mobile)    
+        return 
+            
+    tenu = cnv.pile_mobile.pied()  #la carte tenue par la souris est la première de la pile_mobile
+    (h_tenu, ens_tenu, vis_tenu) = tenu.valeur
 
-    cnv.selCarte = None
-   
+    sorte_groupe = groupe[:-1]  # prends la sorte de groupe auquel la pile appartenait 
+    dest = int(groupe[-1])      # numero du groupe destination
+    
+    if sorte_groupe == 'tas' and cnv.pile_mobile.taille() == 1:     #pour poser une carte sur un tas, il faut toujours que ce soit une carte seule
+        if tas[dest].est_vide() and h_tenu == 1:    #si le tas est vide et la carte tenu est un as, de n'importe quel enseigne
+            tas[dest].empiler(cnv.pile_mobile.contenu.pop())        # on l'empile sur la pile tas
+            if orig == 'colonne':
+                if not colonnes[num_orig].est_vide() :       #on retourne la dernière carte de la colonne d'origine si elle existe
+                    colonnes[num_orig].sommet().retourner()
+        
+        elif not tas[dest].est_vide() :     #si le tas n'est pas vide
+            (h_dest, ens_dest, vis_dest) = tas[dest].sommet().valeur # on décompose la carte du haut du tas
+            if ens_dest == ens_tenu and h_tenu-1 == h_dest :    # si l'enseigne de la carte du sommet du tas et celle tenu sont les même et que celle tenu est supérieur à 1 à celle du sommet du tas
+                tas[dest].empiler(cnv.pile_mobile.contenu.pop())    #on l'empile sur le tas 
+                if not colonnes[num_orig].est_vide() :
+                    (hauteur, enseigne, visible) = colonnes[num_orig].sommet().valeur 
+                    if not visible :
+                        colonnes[num_orig].sommet().retourner()
+        else:
+            if orig == 'colonne':
+                colonnes[num_orig].etendre(cnv.pile_mobile)     # remets le contenu de la pile mobile dans sa pile d'origine si on ne la pose nulle part
+            elif orig == 'main':
+                main.etendre(cnv.pile_mobile) 
+        
+                    
+    elif sorte_groupe == 'colonne'  :
+        if colonnes[dest].est_vide() and h_tenu == 13:
+            while not cnv.pile_mobile.est_vide():
+                cnv.pile_mobile.contenu[0].appartenance = 'colonne'+str(dest)
+                colonnes[dest].empiler(cnv.pile_mobile.contenu.pop(0))
+                if orig == 'colonne':
+                    if not colonnes[num_orig].est_vide():       #on retourne la dernière carte de la colonne d'origine si elle existe
+                        (hauteur, enseigne, visible) = colonnes[num_orig].sommet().valeur 
+                        if not visible :
+                            colonnes[num_orig].sommet().retourner()
+                
+        elif not colonnes[dest].est_vide():
+            (h_dest, ens_dest, vis_dest) = colonnes[dest].sommet().valeur
+            if not vis_dest:
+                if orig == 'colonne':
+                    colonnes[num_orig].etendre(cnv.pile_mobile)     # remets le contenu de la pile mobile dans sa pile d'origine si on ne la pose nulle part
+                elif orig == 'main':
+                    main.etendre(cnv.pile_mobile) 
+                
+            elif ens_tenu in alternance[ens_dest] and h_dest == h_tenu+1 and vis_dest:        #test l'alternance des cartes et si la carte à poser est bien inférieur de 1 à celle de la colonne
+
+                while not cnv.pile_mobile.est_vide():
+                    print(cnv.pile_mobile.contenu)
+                    cnv.pile_mobile.contenu[0].appartenance = 'colonne'+str(dest)
+                    carte = cnv.pile_mobile.contenu.pop(0)
+                    colonnes[dest].empiler(carte)
+                    print(cnv.pile_mobile.contenu)
+                    
+                    
+                if orig == 'colonne':
+                    if not colonnes[num_orig].est_vide() :       #on retourne la dernière carte de la colonne d'origine si elle existe
+                        (hauteur, enseigne, visible) = colonnes[num_orig].sommet().valeur 
+                        if not visible :
+                            colonnes[num_orig].sommet().retourner()
+                            return 
+            else :
+                if orig == 'colonne':
+                    colonnes[num_orig].etendre(cnv.pile_mobile)     # remets le contenu de la pile mobile dans sa pile d'origine si on ne la pose nulle part
+                elif orig == 'main':
+                    main.etendre(cnv.pile_mobile) 
+        
+    else :
+        if orig == 'colonne':
+            colonnes[num_orig].etendre(cnv.pile_mobile)     # remets le contenu de la pile mobile dans sa pile d'origine si on ne la pose nulle part
+        elif orig == 'main':
+            main.etendre(cnv.pile_mobile)    # remets le contenu de la pile mobile dans sa pile d'origine si on ne la pose nulle part
+        
+
+    cnv.pile_mobile = None
+    
+def groupe_id(x, y):
+    '''Renvoie une chaine qui indique quel groupe est présent à la position x, y du canevas c'est-à-dire celle de la souris. Les groupes possibles sont un des quatre tas, une des sept colonnes, la pioche ou la main.'''
+    
+    for k in range (4):
+        if 400+100*k <= x <= 471+100*k and 25 <= y <= 121 :
+            return 'tas'+ str(k)
+            
+    for k in range (7) :
+        col = colonnes[k]
+        if col.est_vide() :
+            if 100+100*k <= x <= 171+100*k and 165 <= y <= 261 :
+                return 'colonne'+ str(k)
+        else :
+            carte = col.sommet()
+            if carte.x <= x <= carte.x + largeur_carte and carte.y <= y <=carte.y + hauteur_carte :
+                return 'colonne' + str(k)
+                
+    if 25 <= x <= 96 and 25 <= y <= 121 :
+        return 'pioche'
+        
+    if not main.est_vide():
+        for k in range (3):
+            if 125+20*k <= x <= 196+20*k and 25 <= y <= 121:
+                return 'main'
+    
+    return None
+                        
+    
 def creation_pioche ():
     '''Renvoie une liste d'elements de Pile_cartes qui représente la pioche mélangée'''
     
@@ -50,20 +212,23 @@ def creation_pioche ():
             
     shuffle(l_pioche)
     
-    pioche = Pile_cartes(61, 72, 0, 0)
+    pioche = Pile_cartes(25, 25, 0, 0)
     for valeur in l_pioche :
-        c = Carte(61, 72, valeur)
+        c = Carte(25, 25, valeur)
         c.appartenance = 'pioche'
         pioche.empiler(c)
         
     return pioche
     
+    
 def distribution (pioche):
     '''Renvoie la liste de piles représentant les colonnes de manipulation des cartes.'''
     
     colonnes = []
+    tas = [Pile_cartes(400+100*k, 25, 0, 0) for k in range (4)]
+    main = Pile_cartes(125, 25, 20, 0)
     for k in range (7):
-        (x, y) = (100*k+136, 213)
+        (x, y) = (100*k+100, 165)
         col = Pile_cartes( x, y, 0, 20)
         for i in range (k):
             carte = pioche.depiler()    #prend une carte dans la pioche
@@ -76,7 +241,7 @@ def distribution (pioche):
         colonnes.append(col)
         
         
-    return colonnes
+    return colonnes, tas, main
     
 
 
@@ -85,8 +250,7 @@ def distribution (pioche):
 hauteurs = ['ace', '2', '3', '4', '5', '6', '7', '8','9', '10', 'jack', 'queen', 'king']
 enseignes = ['clubs', 'spades', 'hearts', 'diamonds']
 
-l_tas = [[]for k in range (4)]      #creation d'une liste de liste représentant les espaces "tas" où l'on va ranger les cartes
-l_colonnes = [[]for m in range (7)]     #creation d'une liste de liste représentant les espaces "colonnes" où l'on manipule les cartes
+alternance = {'clubs':['diamonds', 'hearts'], 'spades':['diamonds', 'hearts'], 'hearts' : ['clubs', 'spades'], 'diamonds': ['clubs', 'spades']}     #dictionnaire pour l'alternance des enseignes dans les colonnes
 
 hauteur_carte = 96
 largeur_carte = 71
@@ -163,14 +327,14 @@ class Carte:
         #les appartenances possibles sont 'pioche', 'la_main', les 'tas' (0 à 3) et les 'colonnes' (0 à 6)
         (hauteur, enseigne, visible) = valeur
         if visible :
-            self.id = cnv.create_image(x, y, image = images[hauteur, enseigne])
+            self.id = cnv.create_image(x, y, anchor = NW, image = images[hauteur, enseigne])    #anchor NW pour que les coordonnées de la carte soient celle du coin supérieur gauche
         else :
-            self.id = cnv.create_image(x, y, image = image_dos)
+            self.id = cnv.create_image(x, y, anchor = NW, image = image_dos)
         carte_id[self.id] = self  #ajout d'une entrée dans le dictionnaire  carte_id
         
     def retourner (self):
         (hauteur, enseigne, visible) = self.valeur
-        self.valeur = (hauteur, enseigne, not visible)
+        self.valeur = (hauteur, enseigne, not(visible))
         if visible :
             cnv.itemconfig(self.id, image = image_dos)
         else:
@@ -204,20 +368,32 @@ class Pile_cartes :
         n = self.taille()         #nombre de cartes avant l'ajout
         self.contenu.append(c)
         x1, y1 = c.x, c.y       # coordonnées de la carte
-        cnv.move(c.id, self.x -x1 + n*self.decale_x, self.y - y1 + n*self.decale_y) #place la carte sur la pile 
+        c.deplacer(self.x -x1 + n*self.decale_x, self.y - y1 + n*self.decale_y) #place la carte sur la pile 
         cnv.lift(c.id)      #place la carte au dessus des autres
-        print(c.valeur)
 
     def depiler (self):
-        assert not (self.contenu is None), 'Liste vide'
+        assert  not self.contenu == [], 'Pile vide'
         return self.contenu.pop()
 
     def taille(self):
-        assert not (self.contenu is None), 'Liste vide'
+
         return len(self.contenu)
 
     def sommet (self):
+        assert self.contenu != [], 'Pile vide'
         return self.contenu[-1]
+        
+    def etendre (self, pile):
+        while not cnv.pile_mobile.est_vide():
+            self.empiler(pile.contenu.pop(0))
+            
+        
+    def pied (self):
+        # renvoie la dernière carte de la pile
+        assert self.contenu != [], 'Pile vide'
+        return self.contenu[0]
+
+
         
     def deplacer (self, dx, dy):
         self.x += dx
@@ -233,7 +409,15 @@ class Pile_cartes :
 
 #### Appels
 pioche = creation_pioche()
-colonnes = distribution(pioche)
+colonnes, tas, main = distribution(pioche)
+
+if tas[0].taille() == 13:
+    if tas[1].taille() == 13:
+        if tas[2].taille() == 13:
+            if tas[3].taille() == 13:
+                print('gagné')
+                cnv.create_text(WIDTH/2, HEIGHT/2, 'Vous avez gagné !')
+                
 
 
 interface.mainloop()
