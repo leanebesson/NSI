@@ -82,18 +82,24 @@ def relache_gauche (e):
     if groupe == 'pioche':  #si on clique sur la pioche, il n'y a pas de pile mobile
         return 
         
-    orig = cnv.origine_pile_mobile[:-1]  #le groupe dont la pile mobile est prélevé
-    num_orig = int(cnv.origine_pile_mobile[-1]) # le numéro dans le groupe où la pile mobile est prélévé
-    
     if cnv.pile_mobile is None:
         return 
         
+        
+    orig = cnv.origine_pile_mobile[:-1]  #le groupe origine dont la pile mobile est prélevé
+    num_orig = int(cnv.origine_pile_mobile[-1]) # le numéro dans le groupe où la pile mobile est prélévé
+    
     if groupe is None:
         if orig == 'colonne':
             colonnes[num_orig].etendre(cnv.pile_mobile)     # remets le contenu de la pile mobile dans sa pile d'origine si on ne la pose nulle part
         elif orig == 'main':
             main.etendre(cnv.pile_mobile)    
         return 
+        
+    if groupe == 'main':
+        if orig == 'main':
+            main.etendre(cnv.pile_mobile) 
+        return
             
     tenu = cnv.pile_mobile.pied()  #la carte tenue par la souris est la première de la pile_mobile
     (h_tenu, ens_tenu, vis_tenu) = tenu.valeur
@@ -145,11 +151,9 @@ def relache_gauche (e):
             elif ens_tenu in alternance[ens_dest] and h_dest == h_tenu+1 and vis_dest:        #test l'alternance des cartes et si la carte à poser est bien inférieur de 1 à celle de la colonne
 
                 while not cnv.pile_mobile.est_vide():
-                    print(cnv.pile_mobile.contenu)
                     cnv.pile_mobile.contenu[0].appartenance = 'colonne'+str(dest)
                     carte = cnv.pile_mobile.contenu.pop(0)
                     colonnes[dest].empiler(carte)
-                    print(cnv.pile_mobile.contenu)
                     
                     
                 if orig == 'colonne':
@@ -263,7 +267,7 @@ carte_id = {}
 #### Interface graphique 
 
 WIDTH=800               #taille de la fenêtre
-HEIGHT=400
+HEIGHT=600
 
 interface = Tk()
 interface.title('Solitaire')
